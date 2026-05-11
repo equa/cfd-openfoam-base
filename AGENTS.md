@@ -53,6 +53,7 @@ compilation for documentation-only edits.
 ## Updating OpenFOAM version
 
 See the instructions in `README.md`. When bumping the version, update:
+
 - `ARG OF_VERSION` default in `Containerfile`
 - Hardcoded version references in `openfoam13-base` stage
 - Image names in the workflow and README
