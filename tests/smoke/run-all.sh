@@ -24,9 +24,9 @@ echo -n "icoFoam -help ... "
 icoFoam -help &>/dev/null || { echo "$FAIL"; exit 1; }
 echo "$PASS"
 
-# 3. simpleFoam (used for steady RANS — the main EQUA use case)
-echo -n "simpleFoam -help ... "
-simpleFoam -help &>/dev/null || { echo "$FAIL"; exit 1; }
+# 3. foamRun (used for steady RANS — the main EQUA use case)
+echo -n "foamRun -help ... "
+foamRun -help &>/dev/null || { echo "$FAIL"; exit 1; }
 echo "$PASS"
 
 # 4. blockMesh (mesh generation utility)

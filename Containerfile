@@ -97,6 +97,7 @@ RUN apt-get update -y && apt-get install -qy \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=openfoam-stripped /opt/openfoam /opt/openfoam
+COPY tests/smoke/run-all.sh /tests/smoke/run-all.sh
 
 ENV FOAM_INST_DIR=/opt/openfoam
 ENV OPENFOAM_VERSION=13
