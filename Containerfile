@@ -36,12 +36,11 @@ RUN apt-get update -y && apt-get install -qy \
 FROM build-deps AS openfoam-builder
 
 ARG OF_VERSION=13
-ARG WM_NCOMPPROCS=4
+ARG FOAM_INST_DIR=/opt/cfd
 
-ENV FOAM_INST_DIR=/opt/cfd
+ENV FOAM_INST_DIR=${FOAM_INST_DIR}
 ENV OPENFOAM_VERSION=${OF_VERSION}
 ENV FOAM_ETC=${FOAM_INST_DIR}/OpenFOAM-${OF_VERSION}/etc
-ENV WM_NCOMPPROCS=${WM_NCOMPPROCS}
 ENV OMPI_ALLOW_RUN_AS_ROOT=1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
@@ -57,6 +56,7 @@ RUN git clone --depth 1 \
     ${FOAM_INST_DIR}/ThirdParty-${OF_VERSION}
 
 COPY scripts/build_openfoam.sh /build_openfoam.sh
+ENV WM_NCOMPPROCS=10
 RUN bash /build_openfoam.sh
 
 
@@ -96,12 +96,15 @@ RUN apt-get update -y && apt-get install -qy \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=openfoam-stripped /opt/openfoam /opt/openfoam
-COPY tests/smoke/run-all.sh /tests/smoke/run-all.sh
+ARG OF_VERSION=13
+ARG FOAM_INST_DIR=/opt/cfd
 
-ENV FOAM_INST_DIR=/opt/openfoam
-ENV OPENFOAM_VERSION=13
-ENV FOAM_ETC=${FOAM_INST_DIR}/OpenFOAM-13/etc
+ENV FOAM_INST_DIR=${FOAM_INST_DIR}
+ENV OPENFOAM_VERSION=${OF_VERSION}
+ENV FOAM_ETC=${FOAM_INST_DIR}/OpenFOAM-${OF_VERSION}/etc
+
+COPY --from=openfoam-stripped ${FOAM_INST_DIR} ${FOAM_INST_DIR}
+COPY tests/smoke/run-all.sh /tests/smoke/run-all.sh
 ENV OMPI_ALLOW_RUN_AS_ROOT=1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 

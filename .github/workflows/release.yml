@@ -64,10 +64,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Detect CPU count
-        id: nproc
-        run: echo "count=$(nproc)" >> "$GITHUB_OUTPUT"
-
       # Both targets share the openfoam-builder layer, so the expensive
       # compilation is only done once thanks to the GHA layer cache.
 
@@ -80,7 +76,6 @@ jobs:
           push: false
           load: true
           tags: openfoam13-base:candidate
-          build-args: WM_NCOMPPROCS=${{ steps.nproc.outputs.count }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +89,6 @@ jobs:
           push: false
           load: true
           tags: openfoam13-dev:candidate
-          build-args: WM_NCOMPPROCS=${{ steps.nproc.outputs.count }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           github-token: ${{ secrets.GITHUB_TOKEN }}
