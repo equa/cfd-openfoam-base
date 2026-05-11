@@ -8,8 +8,10 @@
 #
 set -e
 
+set +e
 # shellcheck disable=SC1090
 source "${FOAM_ETC}/bashrc"
+set -e
 
 cd "${WM_PROJECT_DIR}"
 
