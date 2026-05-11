@@ -26,7 +26,7 @@ Enforced by `commitlint`.
 `feat:`, `fix:`, and `docs:` trigger a release and appear in the CHANGELOG.
 `chore:`, `ci:`, `style:` do not trigger a release.
 
-## CI behaviour
+## CI behavior
 
 The build workflow triggers on push to `beta` **only when** `Containerfile`,
 `scripts/`, or `tests/` change. This avoids re-running a multi-hour OpenFOAM

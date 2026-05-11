@@ -18,6 +18,8 @@
     "buildx",
     "cdx",
     "commitlint",
+    "containerfile",
+    "Containerfile",
     "cyclonedx",
     "CycloneDX",
     "equa",
