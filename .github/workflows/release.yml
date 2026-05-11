@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - beta
+    # Only rebuild when something that affects the image actually changed.
+    # README edits, AGENTS.md updates etc. do not trigger a multi-hour build.
+    paths:
+      - Containerfile
+      - scripts/**
+      - tests/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  # ── Lint ──────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Markdown lint
+        run: npx markdownlint-cli2 "*.md"
+
+      - name: Spell check
+        run: npx cspell --no-progress "*.md"
+
+  # ── Build, smoke-test, push ───────────────────────────────────────────────
+  build_images:
+    name: Build images
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Both targets share the openfoam-builder layer, so the expensive
+      # compilation is only done once thanks to the GHA layer cache.
+
+      - name: Build openfoam13-base (candidate)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Containerfile
+          target: openfoam13-base
+          push: false
+          load: true
+          tags: openfoam13-base:candidate
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build openfoam13-dev (candidate)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Containerfile
+          target: openfoam13-dev
+          push: false
+          load: true
+          tags: openfoam13-dev:candidate
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Smoke-test openfoam13-base
+        run: |
+          docker run --rm \
+            -e FOAM_ETC=/opt/openfoam/OpenFOAM-13/etc \
+            openfoam13-base:candidate \
+            bash /tests/smoke/run-all.sh
+
+      - name: Push openfoam13-base
+        run: |
+          docker tag openfoam13-base:candidate ghcr.io/equa/openfoam13-base:beta
+          docker tag openfoam13-base:candidate ghcr.io/equa/openfoam13-base:beta-${{ github.sha }}
+          docker push ghcr.io/equa/openfoam13-base:beta
+          docker push ghcr.io/equa/openfoam13-base:beta-${{ github.sha }}
+
+      - name: Push openfoam13-dev
+        run: |
+          docker tag openfoam13-dev:candidate ghcr.io/equa/openfoam13-dev:beta
+          docker tag openfoam13-dev:candidate ghcr.io/equa/openfoam13-dev:beta-${{ github.sha }}
+          docker push ghcr.io/equa/openfoam13-dev:beta
+          docker push ghcr.io/equa/openfoam13-dev:beta-${{ github.sha }}
+
+  # ── Semantic release + version-tag images ─────────────────────────────────
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [lint, build_images]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Record current latest tag
+        id: prev
+        run: |
+          git fetch --tags
+          echo "tag=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Semantic release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag images with release version
+        run: |
+          git fetch --tags
+          NEW_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
+          PREV_TAG="${{ steps.prev.outputs.tag }}"
+          if [ -n "$NEW_TAG" ] && [ "$NEW_TAG" != "$PREV_TAG" ]; then
+            echo "Tagging images as ${NEW_TAG}"
+            echo "${{ secrets.GITHUB_TOKEN }}" \
+              | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            for IMAGE in openfoam13-base openfoam13-dev; do
+              docker pull "ghcr.io/equa/${IMAGE}:beta-${{ github.sha }}"
+              docker tag  "ghcr.io/equa/${IMAGE}:beta-${{ github.sha }}" \
+                          "ghcr.io/equa/${IMAGE}:${NEW_TAG}"
+              docker push "ghcr.io/equa/${IMAGE}:${NEW_TAG}"
+            done
+          else
+            echo "No new release; skipping version tag."
+          fi
