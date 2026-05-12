@@ -56,7 +56,7 @@ RUN git clone --depth 1 \
     ${FOAM_INST_DIR}/ThirdParty-${OF_VERSION}
 
 COPY scripts/build_openfoam.sh /build_openfoam.sh
-ENV WM_NCOMPPROCS=10
+ENV WM_NCOMPPROCS=4
 RUN bash /build_openfoam.sh
 
 
