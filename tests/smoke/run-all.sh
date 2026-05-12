@@ -8,9 +8,11 @@ set -e
 PASS="[PASS]"
 FAIL="[FAIL]"
 
-# Source OpenFOAM; profile.d scripts are not loaded in non-login docker exec
+# OF's bashrc uses local var=$(...) constructs that confuse set -e
+set +e
 # shellcheck disable=SC1090
 source "${FOAM_ETC}/bashrc"
+set -e
 
 echo "=== OpenFOAM smoke tests ==="
 
