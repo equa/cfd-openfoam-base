@@ -19,16 +19,6 @@ set +e
 source "${FOAM_ETC}/bashrc"
 set -e
 
-# Remove solver families that are not needed for HVAC/building simulation.
-# This cuts compile time significantly.
-rm -rf \
-    "${FOAM_SOLVERS}/chemFoam" \
-    "${FOAM_SOLVERS}/boundaryFoam" \
-    "${FOAM_SOLVERS}/potentialFoam" \
-    "${FOAM_MODULES}/*MultiphaseVoF" \
-    "${FOAM_MODULES}/multiphase*" \
-    "${FOAM_MODULES}/XiFluid"
-
 cd "${WM_PROJECT_DIR}"
 echo "Building OpenFOAM ${OPENFOAM_VERSION} using ${WM_NCOMPPROCS} cores"
 ./Allwmake
