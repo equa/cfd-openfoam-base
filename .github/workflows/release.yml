@@ -12,6 +12,11 @@ on:
     paths:
       - Containerfile
       - scripts/**
+      # ...but not the local build helper: it drives the build, it is not part
+      # of it, so editing it cannot change what lands in an image. Without this
+      # exclusion every tweak to it costs a multi-hour rebuild. Later patterns
+      # override earlier ones, so this must stay below `scripts/**`.
+      - '!scripts/build-and-push.sh'
       - tests/**
   workflow_dispatch:
 
