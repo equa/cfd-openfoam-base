@@ -56,7 +56,17 @@ RUN git clone --depth 1 \
     ${FOAM_INST_DIR}/ThirdParty-${OF_VERSION}
 
 COPY scripts/build_openfoam.sh /build_openfoam.sh
-ENV WM_NCOMPPROCS=4
+# Compile parallelism. 4 is a safe default for a GitHub-hosted runner; a local
+# build should raise it to the core count, which is most of the reason to build
+# locally at all:
+#   podman build --build-arg WM_NCOMPPROCS=$(nproc) ...
+#
+# This was an ENV until 2026-09, which meant the --build-arg the README has
+# always documented was silently ignored: every local build compiled on 4 cores
+# whatever you passed. ARG first, then ENV of the same name, so the value both
+# overrides and reaches build_openfoam.sh.
+ARG WM_NCOMPPROCS=4
+ENV WM_NCOMPPROCS=${WM_NCOMPPROCS}
 RUN bash /build_openfoam.sh
 
 

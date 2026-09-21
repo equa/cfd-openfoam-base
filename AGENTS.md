@@ -34,6 +34,13 @@ compilation for documentation-only edits.
 
 `workflow_dispatch` is available for a manual rebuild at any time.
 
+In practice the images are **built locally and pushed**, not built in CI: a full
+OpenFOAM compilation on a hosted runner is slow enough to be flaky against the
+six-hour job limit. Use `scripts/build-and-push.sh`, which mirrors the workflow
+step for step. Rebuild periodically even when this repository has not changed —
+the Ubuntu package set is frozen at build time, so a stale base image is where
+most of the stack's vulnerability findings come from.
+
 ## Key files
 
 | File | Purpose |
@@ -41,6 +48,7 @@ compilation for documentation-only edits.
 | `Containerfile` | All image definitions — source of truth for toolchain versions |
 | `scripts/build_openfoam.sh` | Configures and compiles OpenFOAM + ThirdParty |
 | `scripts/cleanup_openfoam.sh` | Strips binaries and removes build intermediates |
+| `scripts/build-and-push.sh` | Build both images locally, smoke-test, push to GHCR |
 | `tests/smoke/run-all.sh` | Smoke tests run inside the built image |
 | `.github/workflows/release.yml` | CI: lint → build → smoke test → push → release |
 
